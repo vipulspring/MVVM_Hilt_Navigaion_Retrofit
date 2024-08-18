@@ -30,25 +30,46 @@ class registerFragment : Fragment() {
 
         _binding = FragmentRegisterBinding.inflate(inflater, container, false)
 
-
-        binding.btnSignUp.setOnClickListener {
-           // findNavController().navigate(R.id.action_registerFragment_to_mainFragment)
-            authViewModel.registerUser(UserRequest("Vipul", "123456"))
-        }
-
-
-        binding.btnLogin.setOnClickListener {
-            findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
-        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.btnSignUp.setOnClickListener {
+            val validationResult = validateUserInput()
+            if (validationResult.first) {
+                authViewModel.registerUser(getUserRequest())
+            } else {
+                binding.txtError.text = validationResult.second
+            }
+        }
+
+
+        binding.btnLogin.setOnClickListener {
+            findNavController().navigate(R.id.action_registerFragment_to_loginFragment)
+        }
+
+        bindObservers()
+
+    }
+
+    private fun getUserRequest(): UserRequest {
+        val username = binding.txtUsername.text.toString()
+        val emailAddress = binding.txtEmail.text.toString()
+        val password = binding.txtPassword.text.toString()
+        return UserRequest(username, password)
+    }
+
+    private fun validateUserInput(): Pair<Boolean, String> {
+        val userRequest = getUserRequest()
+        return authViewModel.validateCredentials(userRequest.username, "", userRequest.password)
+    }
+
+    private fun bindObservers() {
         authViewModel.userResponseLiveData.observe(viewLifecycleOwner, Observer {
             binding.progressBar.isVisible = false
-            when(it) {
+            when (it) {
                 is NetworkResult.Success -> {
                     //token
                     findNavController().navigate(R.id.action_registerFragment_to_mainFragment)
@@ -57,13 +78,13 @@ class registerFragment : Fragment() {
                 is NetworkResult.Error -> {
                     binding.txtError.text = it.message
                 }
+
                 is NetworkResult.Loading -> {
                     //binding.progressBar.visibility = View.VISIBLE
                     binding.progressBar.isVisible = true
                 }
             }
         })
-
     }
 
     override fun onDestroyView() {

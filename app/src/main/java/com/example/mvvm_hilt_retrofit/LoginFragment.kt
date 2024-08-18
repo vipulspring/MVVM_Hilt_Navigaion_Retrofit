@@ -30,10 +30,6 @@ class LoginFragment : Fragment() {
 
         _binding = FragmentLoginBinding.inflate(inflater, container, false)
 
-
-        binding.btnLogin.setOnClickListener {
-            authViewModel.loginUser(UserRequest("emilyspass", "emilys"))
-        }
         // Inflate the layout for this fragment
         return binding.root
     }
@@ -41,6 +37,35 @@ class LoginFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        binding.btnLogin.setOnClickListener {
+            val validationResult = validateUserInput()
+            if(validationResult.first){
+            authViewModel.loginUser(getUserRequest())
+            }else{
+                binding.txtError.text = validationResult.second
+            }
+        }
+
+        binding.btnSignUp.setOnClickListener {
+            findNavController().popBackStack()
+        }
+
+        bindObservers()
+
+    }
+
+    private fun getUserRequest(): UserRequest {
+        val username = binding.txtUsername.text.toString()
+        val password = binding.txtPassword.text.toString()
+        return UserRequest(username, password)
+    }
+
+    private fun validateUserInput(): Pair<Boolean, String> {
+        val userRequest = getUserRequest()
+        return authViewModel.validateCredentials(userRequest.username, "", userRequest.password)
+    }
+
+    private fun bindObservers() {
         authViewModel.userResponseLiveData.observe(viewLifecycleOwner, Observer {
             binding.progressBar.isVisible = false
             when(it) {
@@ -59,7 +84,6 @@ class LoginFragment : Fragment() {
                 }
             }
         })
-
     }
 
     override fun onDestroyView() {
